@@ -27,7 +27,7 @@ public sealed class Driver : IDisposable
     private bool transaction;
     private readonly object gate = new();
     public Driver(string uri, string username, string password,
-                  string database = "neo4j", int timeoutMilliseconds = 30000)
+                  string database = "", int timeoutMilliseconds = 30000)
     {
         var u = new Uri(uri);
         if ((u.Scheme != "bolt" && u.Scheme != "bolt+s") || u.Host.Length == 0 ||
@@ -94,6 +94,11 @@ public sealed class Driver : IDisposable
     }
     private void Send(byte tag, params object?[] fields)
     {
+        if (tag == 0x10 || tag == 0x11)
+        {
+            var extra = (Dictionary<string, object?>)fields[tag == 0x10 ? 2 : 0]!;
+            if (Equals(extra.GetValueOrDefault("db"), "")) extra.Remove("db");
+        }
         if (tag == 0x10) Mapping.ValidateParameters(fields[1]);
         var b = PackStream.Encode(new Structure(tag, fields));
         using var frame = new MemoryStream();
