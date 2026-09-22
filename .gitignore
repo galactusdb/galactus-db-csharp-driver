@@ -13,3 +13,16 @@ node_modules/
 *.suo
 .vs/
 .DS_Store
+
+# .NET / Visual Studio
+.idea/
+*.rsuser
+*.userosscache
+*.sln.docstates
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+*.nupkg
+*.snupkg
+packages/
