@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
+    <PackageId>Galactus.Driver</PackageId><Version>0.1.0</Version><Description>Dependency-free Bolt 4.4 driver for Galactus DB</Description>
+    <PackageProjectUrl>https://galactusdb.com</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/galactusdb/galactus-db-csharp-driver</RepositoryUrl>
+  </PropertyGroup>
+  <ItemGroup><Compile Remove="tests/**/*.cs" /></ItemGroup>
+</Project>
