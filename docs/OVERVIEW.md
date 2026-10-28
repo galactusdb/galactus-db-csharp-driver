@@ -1,12 +1,13 @@
 # Galactus DB drivers
 
 Seven native **database drivers**, with a shared API and zero third-party runtime
-packages. Version **0.1.0** is early access. All seven source repositories are
+packages. Version **0.2.0** is early access. All seven source repositories are
 public under [galactusdb](https://github.com/galactusdb), with `main` as the default
 branch. Registry packages have not been published; install from source using the
-language Quickstart and pin a reviewed commit. Each driver speaks **Bolt 4.4**
-directly. Each uses its host language directly and needs neither a helper runtime nor
-the server source at runtime.
+language Quickstart and pin a reviewed commit. Each driver speaks **Bolt 5.0 to 5.4**
+directly and falls back to Bolt 4.4 when a server offers nothing newer. Each uses
+its host language directly and needs neither a helper runtime nor the server
+source at runtime.
 
 Use **driver** for package names and public APIs. Use **SDK** for a future wider
 bundle containing drivers, administration tools, examples, and integrations.
@@ -34,6 +35,12 @@ links and runtime requirements.
 5. Close/dispose the driver; closing an open transaction rolls it back on the
    server. Rust and C++ also close on destruction.
 
+A database error, such as a syntax error or a broken constraint, leaves the
+driver ready for the next query. Each error carries the server code plus its
+classification, and every driver publishes the common codes as constants, so
+`ConstraintValidationFailed` is a name to compare against rather than a string
+to type. Nodes and relationships expose their element ids.
+
 No generated models, ORM, schema registration, JSON conversion, or special
 integer class is needed for ordinary values. Parameter values are encoded
 recursively, and returned values are hydrated recursively, including spatial
@@ -60,7 +67,7 @@ conversion through GeoJSON. Bind a `Spatial` value directly, then use
 `spatial.fromMap($shape)` in Cypher to turn that envelope into a database shape.
 This explicit promotion is required by the existing server protocol.
 
-## Scope of 0.1
+## Scope of 0.2
 
 These are small **single-connection, eager-result drivers**. One connection is
 owned by each driver. Use a separate driver for each concurrent unit of work,
@@ -69,22 +76,26 @@ operations; Python and C++ must not be shared concurrently; Rust requires mutabl
 access. There is no connection pool, routing discovery, automatic retry,
 managed transaction callback, lazy cursor, ORM, or async API outside Node yet.
 
-`bolt://` is direct TCP. Python, Node, Go, Java and C# also support verified
-`bolt+s://` using system TLS facilities. Rust and C++ reject TLS URIs and require
-an external TLS tunnel when encryption is needed. No driver silently downgrades
-TLS. The current Galactus listener is plaintext; TLS requires a terminating proxy.
+`bolt://` is direct TCP. `bolt+s://` is verified TLS against the Galactus
+server's own certificate (`GDB_TLS_CERT` and `GDB_TLS_KEY`). Python, Node, Go,
+Java and C# use their runtime's TLS. Rust enables it with the `tls` cargo feature
+(rustls) and C++ with the `GALACTUS_WITH_TLS` build option (SChannel on Windows,
+OpenSSL elsewhere); their default builds stay dependency-free. Trust comes from
+the platform store, or from a trusted certificate file for a private CA. No
+driver silently downgrades TLS or skips verification.
 
 Messages are limited to 64 MiB and nesting to 64 levels. Query results are eager
 and may collectively exceed one message; use Cypher `LIMIT` for large queries.
 I/O timeouts default to 30 seconds. They bound socket waits (Go uses a deadline
 for the complete operation), not total DNS resolution or every query's total
-elapsed time. Protocol/I/O/database failures discard the connection. Open a new
-driver after failure. A failed COMMIT can have an **unknown commit outcome**;
-the drivers never automatically replay a write.
+elapsed time. I/O, TLS and protocol failures discard the connection; open a
+new driver after one. A transport failure during COMMIT has an **unknown commit outcome**; the drivers never automatically replay a write.
 
 Returned graph entities are result-only database types; bind their IDs or
-properties rather than the entities. Arbitrary application objects, UUIDs and
-decimal types are not implicitly converted. Convert them explicitly to a
+properties rather than the entities. Galactus returns `DECIMAL` values as exact strings;
+C#, Java and Python also accept their standard decimal type as a parameter, sent
+as its exact text for `decimal($param)`. Arbitrary application objects and UUIDs
+are not implicitly converted. Convert them explicitly to a
 supported representation. Use unique result aliases when reading record maps.
 
 ## Verification
