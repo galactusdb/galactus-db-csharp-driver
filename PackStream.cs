@@ -6,7 +6,12 @@ public static class PackStream
 {
     public const int MaxMessage = 64 * 1024 * 1024;
     private static readonly UTF8Encoding Utf8 = new(false, true);
-    public static byte[] Encode(object? value)
+    /// <summary>Encodes in Bolt 4.4 form, as in 0.1.</summary>
+    public static byte[] Encode(object? value) => Encode(value, false);
+    /// <summary>Encodes for the agreed protocol: <paramref name="bolt5"/>
+    /// selects Bolt 5 offset datetimes (<c>I</c>) and graph element ids.
+    /// Decoding accepts both forms on any version.</summary>
+    public static byte[] Encode(object? value, bool bolt5)
     {
         using var output = new MemoryStream();
         void Number(ulong v, int n)
@@ -29,7 +34,7 @@ public static class PackStream
         {
             if (depth >= 64)
                 throw new ArgumentException("Nesting exceeds 64 levels");
-            v = Mapping.Dehydrate(v);
+            v = Mapping.Dehydrate(v, bolt5);
             switch (v)
             {
                 case null:
