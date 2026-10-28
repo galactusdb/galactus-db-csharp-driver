@@ -37,14 +37,14 @@ driver then uses the 4.4 message and value forms.
 - `bolt_agent` is a map: `product` (`galactus-db-{language}-driver/0.2.0`),
   `language` (for example `Python/3.12.1`), `language_details` (runtime or
   compiler name, optional) and `platform` (OS and architecture, optional). Send
-  it from 5.1 on; 5.3 makes it required.
+  it from 5.1 on (not in a 5.0 HELLO); 5.3 makes it required.
 - `user_agent` is `galactus-db-{language}-driver/0.2.0`.
 
 A failed authentication is terminal: the server closes the connection. Raise
 the database error with the server's code and discard the connection.
 Credentials are separate arguments, never URI userinfo. No driver logs
-credentials or query parameters. Reject unsupported URI schemes, URI query
-options other than the TLS ones below, and routing URIs.
+credentials or query parameters. Reject unsupported URI schemes, all URI query
+options, and routing URIs.
 
 Do not send TELEMETRY, LOGOFF or ROUTE. Session re-authentication, routing and
 telemetry are not part of 0.2.
@@ -79,7 +79,8 @@ Discard the connection, as in 0.1, when:
 
 - reading or writing fails (I/O, timeout, TLS),
 - the peer breaks the protocol (malformed message, unexpected response),
-- RESET itself does not end in SUCCESS,
+- RESET itself does not end in SUCCESS (raise the original database error),
+- an IGNORED arrives anywhere other than while reading RESET's reply,
 - authentication fails.
 
 A FAILURE answering COMMIT means the transaction did not commit. A transport
@@ -176,7 +177,9 @@ UTC, with a constructor for each. A value decoded from `f` is local-based and
 one from `i` is UTC-based. The encoder writes the value's own basis: `f` for
 local, `i` for UTC, on either protocol; the Galactus server accepts both tags
 on every version. Two wrappers are equal only when basis, seconds, nanos and
-zone match. Languages with a time zone database (Java, C#, Go, Python, Node)
+zone match. The server answers in its protocol's own basis (local `f` on 4.4,
+UTC `i` on 5.x), so `RETURN $v` gives back the same instant and zone but not
+necessarily the same basis; compare instants in tests. Languages with a time zone database (Java, C#, Go, Python, Node)
 may offer a conversion helper; none is required.
 
 ### Graph values on Bolt 5
@@ -242,7 +245,9 @@ and unsupported parameter values fail explicitly. Encoders reject signed
 integer overflow and non-string map keys. Decoders reject trailing bytes,
 duplicate map keys and nesting above 64. Messages are capped at 64 MiB.
 
-Validate/encode a complete request before writing it. After a database
+Validate/encode a complete request before writing it. A parameter that fails
+validation raises before anything is sent and leaves the connection usable.
+After a database
 FAILURE, reset and keep the connection (see "Recovering after a database
 error"). On protocol, I/O or TLS failure discard it. Treat a transport failure
 during COMMIT as unknown outcome, never a safe retry.
@@ -262,8 +267,10 @@ keeps `code` and `message` unchanged and adds, in the language's naming:
 
 Each driver also publishes the codes below as constants (Python module
 constants, a C# static class, Java/Go/Rust/C++ constants, a frozen Node object),
-named after the title, so applications compare against a name rather than a
-string. Codes the server adds later still work as plain strings.
+named after the title in the language's constant style (`ErrorCodes.TypeError`
+in C#, `ErrorCodes.TYPE_ERROR` in Java, `codes.TYPE_ERROR` in Python, `galactus.CodeTypeError` in Go, `codes::TYPE_ERROR` in Rust,
+`galactus::codes::type_error` in C++), so applications
+compare against a name rather than a string. Codes the server adds later still work as plain strings.
 
 | Constant | Code |
 |---|---|
@@ -286,9 +293,10 @@ string. Codes the server adds later still work as plain strings.
 | Unauthorized | `Neo.ClientError.Security.Unauthorized` |
 | DatabaseNotFound | `Neo.ClientError.Database.DatabaseNotFound` |
 
-Where a language name clashes (for example `TypeError` in Python or Node),
-keep the constant inside the codes namespace (`ErrorCodes.TypeError`,
-`codes.TYPE_ERROR`) rather than renaming it.
+Keep the constants inside a codes namespace (in Go, a `Code` prefix) so names such
+as `TypeError` do not clash with the language's own. A configuration error (for example a trusted
+certificate file on a `bolt://` URI) raises the language's usual argument or
+configuration error before connecting.
 
 ## Follow-on releases
 
