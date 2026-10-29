@@ -347,3 +347,7 @@ opening a pull request against `main`.
 
 Visit [galactusdb.com](https://galactusdb.com) for Galactus DB, or browse the
 [other language drivers](https://galactusdb.com/product/drivers).
+
+## Licence
+
+Apache License 2.0. See [LICENSE](LICENSE).
