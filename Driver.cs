@@ -61,10 +61,10 @@ public static class ErrorCodes
     public const string SnapshotTooOld =
         "Galactus.TransientError.Transaction.SnapshotTooOld";
     public const string Forbidden = "Galactus.ClientError.Security.Forbidden";
-    public const string SyntaxError = "Neo.ClientError.Statement.SyntaxError";
-    public const string SemanticError = "Neo.ClientError.Statement.SemanticError";
-    public const string Unauthorized = "Neo.ClientError.Security.Unauthorized";
-    public const string DatabaseNotFound = "Neo.ClientError.Database.DatabaseNotFound";
+    public const string SyntaxError = "Galactus.ClientError.Statement.SyntaxError";
+    public const string SemanticError = "Galactus.ClientError.Statement.SemanticError";
+    public const string Unauthorized = "Galactus.ClientError.Security.Unauthorized";
+    public const string DatabaseNotFound = "Galactus.ClientError.Database.DatabaseNotFound";
 }
 
 public sealed record Result(IReadOnlyList<string> Keys,
