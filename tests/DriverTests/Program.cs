@@ -66,6 +66,7 @@ foreach (var h in File.ReadAllLines("tests/fixtures/malformed.tsv")) {
   codecCases++;
 }
 Console.WriteLine($"C# codec passed ({codecCases} fixture cases)");
+MapperTests.Offline();
 var uri = Environment.GetEnvironmentVariable("GDB_TEST_URI");
 if (uri is null) {
   Console.WriteLine("C# live skipped");
@@ -253,5 +254,6 @@ if (caFile is not null) {
   }
   Check(misconfigured, "trusted certificates on bolt:// must be rejected");
 }
+MapperTests.Live(uri, password, caFile);
 Console.WriteLine($"C# live tests passed (Bolt {expectBolt ?? "any"}" +
                   (caFile is null ? ")" : ", TLS)"));
