@@ -75,7 +75,7 @@ public sealed record Result(IReadOnlyList<string> Keys,
 /// transaction.</summary>
 public sealed class Driver : IDisposable
 {
-    public const string Version = "0.2.0";
+    public const string Version = "0.3.0";
     private const string Agent = "galactus-db-csharp-driver/" + Version;
     private readonly TcpClient client;
     private readonly Stream stream;

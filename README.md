@@ -8,7 +8,7 @@ falls back to Bolt 4.4 when a server offers nothing newer, encrypts with the
 server's own TLS certificate through `SslStream`, and has **zero third-party
 runtime package dependencies**.
 
-**Status: 0.2 / early access.** Source is available on `main`. This is a working,
+**Status: 0.3 / early access.** Source is available on `main`. This is a working,
 tested baseline with one connection per driver and eager results. Install from
 source as shown below, and read the [implementation overview](docs/OVERVIEW.md)
 for the precise scope.
@@ -372,7 +372,7 @@ three live passes (Bolt 5.4, Bolt 4.4 and TLS).
 This release provides direct connections over Bolt 5.4 or 4.4, basic
 authentication, verified TLS, parameterised queries, eager records and
 summaries, explicit transactions, recovery after database errors, classified
-errors, native type mapping, and full supported spatial interchange. Each
+errors, native type mapping, an object mapper and full supported spatial interchange. Each
 driver owns one connection. Messages are capped at 64 MiB and nesting at 64
 levels; aggregate result memory can exceed a single message.
 
