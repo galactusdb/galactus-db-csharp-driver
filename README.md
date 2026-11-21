@@ -20,6 +20,7 @@ for the precise scope.
 - [Queries and results](#queries-and-results)
 - [Transactions](#transactions)
 - [Native type mapping](#native-type-mapping)
+- [Object mapping](#object-mapping)
 - [Spatial values](#spatial-values)
 - [Errors and connection lifecycle](#errors-and-connection-lifecycle)
 - [Testing](#testing)
@@ -220,9 +221,51 @@ var price = driver.ExecuteQuery("RETURN decimal($p) AS price",
 var total = decimal.Parse((string)price!, CultureInfo.InvariantCulture);
 ```
 
-No ORM or automatic arbitrary-object mapping is included. Convert application
+The optional [mapper](#object-mapping) converts your own types to and from nodes. Convert application
 models and UUIDs explicitly to a supported value.
 See the [complete type mapping](docs/BLUEPRINT.md) for precision and range details.
+
+## Object mapping
+
+The driver includes an optional mapper: declare a type as a node or a relationship, and it
+converts objects to and from the graph and writes the Cypher for the everyday operations.
+It adds no dependency. [docs/MAPPER.md](docs/MAPPER.md) is the full contract, shared by every
+Galactus driver.
+
+```csharp
+using Galactus.ObjectMapping;
+
+[Node("Person")]
+public sealed class Person {
+    [Key] public long Id { get; set; }
+    public string? Name { get; set; }
+    [Property("email_address")] public string? Email { get; set; }
+}
+public sealed class Company {
+    [Key] public string? Name { get; set; }
+}
+[Relationship("WORKS_AT")]
+public sealed class WorksAt {
+    public long Since { get; set; }
+}
+
+var mapper = new Mapper(driver);
+var ann = mapper.Save(new Person { Id = 1, Name = "Ann", Email = "ann@example.com" });
+var acme = mapper.Save(new Company { Name = "Acme" });
+mapper.Relate(ann, new WorksAt { Since = 2024 }, acme);
+
+Person? found = mapper.Find<Person>(1L);
+List<Person> people = mapper.FindAll<Person>(new Dictionary<string, object?> { { "Name", "Ann" } }, limit: 10);
+var jobs = mapper.Related<WorksAt, Company>(ann);     // List<(WorksAt Relationship, Company Node)>
+var named = mapper.Query<Person>("MATCH (p:Person) WHERE p.name STARTS WITH $s RETURN p",
+                                 new Dictionary<string, object?> { { "s", "A" } });
+bool deleted = mapper.Delete<Person>(1L);
+```
+
+Public properties with a getter and a setter are mapped, under their name with a lower-case start; `[Ignore]` leaves one out. A mapped class needs a constructor with no parameters.
+`Query` maps what a statement of your own returns, so the mapper never stands between you
+and Cypher. Every operation is one statement and joins the driver's open transaction when
+there is one.
 
 ## Spatial values
 
